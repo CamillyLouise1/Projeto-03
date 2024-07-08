@@ -1,5 +1,6 @@
 import {createServer} from 'node:http';
 import fs from 'node:fs';
+import { v4 as uuidv4 } from 'uuid';
 
 import lerDadosReceitas from "./helper/lerReceitas.js"
 const PORT = 3333;
@@ -20,6 +21,32 @@ const server = createServer((request, response)=>{
           
        })
      }else if(method === 'POST' && url === "/receitas"){
+       let body = ""
+       request.on("data", (chunk)=>{
+        body += chunk;
+       })
+       request.on('end', ()=>{
+        const novaReceita = JSON.parse(body)
+        lerDadosReceitas((err, receitas)=>{
+          if(err){
+            response.writeHead(500, {"Content-Type":"application/json"})
+            response.end(JSON.stringify({message: "Erro ao ler receitas"}))
+            return
+          }
+          novaReceita.id = uuidv4();
+          receitas.push(novaReceita);
+          fs.writeFile("receitas.json", JSON.stringify(receitas, null, 2), (err)=>{
+            if(err){
+            response.writeHead(500, {"Content-Type":"application/json"})
+            response.end(JSON.stringify({message: "Erro ao cadastrar receitas"}))
+            return
+            }
+            response.writeHead(201, {"Content-Type":"application/json"})
+            response.end(JSON.stringify({novaReceita}))
+          
+          })
+        })
+       })
 
      }else if(method === 'GET' && url.startsWith( "/receitas/")){
         
